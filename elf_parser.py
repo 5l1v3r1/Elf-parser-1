@@ -69,15 +69,19 @@ def elfHeaderParser():
 
         curElfHeader.e_entry = '0x' + curElfHeader.e_entry
 
-        chunk = file.read(4)
-        offset += 4
-        decimalValue = unpack('I', chunk)[0]
-        curElfHeader.e_phoff = decimalValue
+        for i in range(4):
+            chunk = file.read(1)
+            offset += 1
+            curElfHeader.e_phoff = chunk.encode('hex') + curElfHeader.e_phoff
 
-        chunk = file.read(4)
-        offset += 4
-        decimalValue = unpack('I', chunk)[0]
-        curElfHeader.e_shoff = decimalValue
+        curElfHeader.e_phoff = '0x' + curElfHeader.e_phoff
+
+        for i in range(4):
+            chunk = file.read(1)
+            offset += 1
+            curElfHeader.e_shoff = chunk.encode('hex') + curElfHeader.e_shoff
+
+        curElfHeader.e_shoff = '0x' + curElfHeader.e_shoff
     else:
         for i in range(8):
             chunk = file.read(1)
@@ -86,15 +90,19 @@ def elfHeaderParser():
 
         curElfHeader.e_entry = '0x' + curElfHeader.e_entry
 
-        chunk = file.read(8)
-        offset += 8
-        decimalValue = unpack('Q', chunk)[0]
-        curElfHeader.e_phoff = decimalValue
+        for i in range(8):
+            chunk = file.read(1)
+            offset += 1
+            curElfHeader.e_phoff = chunk.encode('hex') + curElfHeader.e_phoff
 
-        chunk = file.read(8)
-        offset += 8
-        decimalValue = unpack('Q', chunk)[0]
-        curElfHeader.e_shoff = decimalValue
+        curElfHeader.e_phoff = '0x' + curElfHeader.e_phoff
+
+        for i in range(8):
+            chunk = file.read(1)
+            offset += 1
+            curElfHeader.e_shoff = chunk.encode('hex') + curElfHeader.e_shoff
+
+        curElfHeader.e_shoff = '0x' + curElfHeader.e_shoff
 
     chunk = file.read(4)
     offset += 4
@@ -154,23 +162,23 @@ def elfHeaderPrinter():
     print 
     print 'Elf Header of {}:'.format(fileName)
     print
-    print ('{:<50}:' + magicSeq).format('Magic number')
-    print ('{:<50}:' + classes[int(curElfHeader.e_indent[4], 16)]).format('File class')
-    print ('{:<50}:' + datas[int(curElfHeader.e_indent[5], 16)]).format('Data encoding')
-    print ('{:<50}:' + versions[int(curElfHeader.e_indent[6], 16)]).format('File version')
-    print ('{:<50}:' + str(curElfHeader.e_type)).format('Object file type')
-    print ('{:<50}:' + str(curElfHeader.e_machine)).format('Machine type ')
-    print ('{:<50}:' + str(curElfHeader.e_version)).format('Object file version')
-    print ('{:<50}:' + str(curElfHeader.e_entry)).format('Entry point address')
-    print ('{:<50}:' + str(curElfHeader.e_phoff)).format('Program header offset')
-    print ('{:<50}:' + str(curElfHeader.e_shoff)).format('Section header offset')
-    print ('{:<50}:' + str(curElfHeader.e_flags)).format('Processor-specific flags')
-    print ('{:<50}:' + str(curElfHeader.e_ehsize)).format('ELF header size')
-    print ('{:<50}:' + str(curElfHeader.e_phentsize)).format('Size of the program header entry')
-    print ('{:<50}:' + str(curElfHeader.e_phnum)).format('Number of program header entries')
-    print ('{:<50}:' + str(curElfHeader.e_shentsize)).format('Size of section header entry')
-    print ('{:<50}:' + str(curElfHeader.e_shnum)).format('Number of section header entries')
-    print ('{:<50}:' + str(curElfHeader.e_shstrndx)).format('Section name string table index')
+    print ('{:<50}' + magicSeq).format('Magic number:')
+    print ('{:<50}' + classes[int(curElfHeader.e_indent[4], 16)]).format('File class:')
+    print ('{:<50}' + datas[int(curElfHeader.e_indent[5], 16)]).format('Data encoding:')
+    print ('{:<50}' + versions[int(curElfHeader.e_indent[6], 16)]).format('File version:')
+    print ('{:<50}' + str(curElfHeader.e_type)).format('Object file type:')
+    print ('{:<50}' + str(curElfHeader.e_machine)).format('Machine type:')
+    print ('{:<50}' + str(curElfHeader.e_version)).format('Object file version:')
+    print ('{:<50}' + str(curElfHeader.e_entry)).format('Entry point address:')
+    print ('{:<50}' + str(curElfHeader.e_phoff)).format('Program header offset:')
+    print ('{:<50}' + str(curElfHeader.e_shoff)).format('Section header offset:')
+    print ('{:<50}' + str(curElfHeader.e_flags)).format('Processor-specific flags:')
+    print ('{:<50}' + str(curElfHeader.e_ehsize)).format('ELF header size:')
+    print ('{:<50}' + str(curElfHeader.e_phentsize)).format('Size of the program header entry:')
+    print ('{:<50}' + str(curElfHeader.e_phnum)).format('Number of program header entries:')
+    print ('{:<50}' + str(curElfHeader.e_shentsize)).format('Size of section header entry:')
+    print ('{:<50}' + str(curElfHeader.e_shnum)).format('Number of section header entries:')
+    print ('{:<50}' + str(curElfHeader.e_shstrndx)).format('Section name string table index:')
 
 def sign():
     print
@@ -182,7 +190,7 @@ def sign():
     print "      |_|   \___/ \___/ \__|\__\___|_| |_|"
     print
     print "{:^}".format('Elf parser by Mert Degirmenci')
-    print '__________________________________________________'
+    print '___________________________________________________'
 
 def main():
     sign()
