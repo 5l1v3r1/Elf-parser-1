@@ -42,7 +42,9 @@ def elfHeaderParser():
         offset += 1
         curElfHeader.e_indent.append(chunk.encode('hex'))
 
-    magicalCheck()
+    if not magicalCheck():
+        file.close()
+        exit()
 
     fileClassID = int(curElfHeader.e_indent[4], 16)
 
@@ -140,7 +142,9 @@ def elfHeaderParser():
     curElfHeader.e_shstrndx = decimalValue
 
     if offset != curElfHeader.e_ehsize:
+        file.close()
         exit()
+    file.close()
 
 def magicalCheck():
     check = False
