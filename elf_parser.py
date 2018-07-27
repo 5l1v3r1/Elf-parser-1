@@ -322,21 +322,7 @@ def stringTableParser():
 
 
     file.seek(tableOffset)
-
-"""     while offset < size:
-        chunk = file.read(1)
-        offset += 1
-        if chunk.encode('hex') == '\0':
-            while chunk != '\0':
-                chunk = file.read(1)
-                offset += 1
-                if chunk != '\0':
-                    strValue += unpack('c')[0]
-            curStringSection.append(strValue)
-            strValue = ''
-                    
-
-        curStringSection.append() """
+    file.close()
 
 def elfHeaderPrinter():
     magicSeq = ''
