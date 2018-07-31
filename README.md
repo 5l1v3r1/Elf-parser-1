@@ -8,7 +8,7 @@ This project aims to validate and parse properly Intel 80386 and AMD x86-64 arch
 
 >In computing, the Executable and Linkable Format (ELF, formerly named Extensible Linking Format), is a common standard file format for executable files, object code, shared libraries, and core dumps.
 
-With the last commit of time, it has functinality to parse Elf Header, Section Header and String Tables.
+With the last commit of time, it has functinality to parse Elf Header, Section Header, Symbol Tables and String Tables.
 
 ```
 Elf Header of empty:
