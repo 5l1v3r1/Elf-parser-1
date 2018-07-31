@@ -13,38 +13,67 @@ classes = {1:'32-bit objects', 2:'64-bit objects'}
 
 sectionTypes = {0:'SHT_NULL', 1:'SHT_PROGBITS', 2:'SHT_SYMTAB', 3:'SHT_STRTAB', 4:'SHT_RELA', 5:'SHT_HASH', 6:'SHT_DYNAMIC', 7:'SHT_NOTE', 8:'SHT_NOBITS', 9:'SHT_REL', 10:'SHT_SHLIB', 11:'SHT_DYNSYM', 14:'SHT_INIT_ARRAY', 15:'SHT_FINI_ARRAY', 16:'SHT_PREINIT_ARRAY', 17:'SHT_GROUP', 18:'SHT_SYMTAB_SHNDX', 19:'SHT_NUM'}
 sectionFlags = {0:'', 1:'SHF_WRITE', 2:'SHF_ALLOC', 3:'SHF_EXECINSTR'}
-sectionInfos = {}
 
+symbolBinding = {0:'LOCAL', 1:'GLOBAL', 2:'WEAK', 10:'LOOS', 12:'HIOS', 13:'LOPROC', 15:'HIPROC'}
+symbolTypes = {0:'NOTYPE', 1:'OBJECT', 2:'FUNC', 3:'SECTION', 4:'FILE', 10:'LOOS', 12:'HIOS', 13:'LOPROC', 15:'HIPROC'}
+
+symbolFlag = {0:'Static', 1:'Dynamic'}
 class elfHeaderClass:
-    e_indent = []
-    e_type = ''
-    e_machine = ''
-    e_version = ''
-    e_entry = ''
-    e_phoff = ''
-    e_shoff = ''
-    e_flags = ''
-    e_ehsize = ''
-    e_phentsize = ''
-    e_phnum = ''
-    e_shentsize = ''
-    e_shnum = ''
-    e_shstrndx = ''
+
+    def __init__(self):
+        self.e_indent = []
+        self.e_type = ''
+        self.e_machine = ''
+        self.e_version = ''
+        self.e_entry = ''
+        self.e_phoff = ''
+        self.e_shoff = ''
+        self.e_flags = ''
+        self.e_ehsize = ''
+        self.e_phentsize = ''
+        self.e_phnum = ''
+        self.e_shentsize = ''
+        self.e_shnum = ''
+        self.e_shstrndx = ''
 
 class sectionHeaderClass:
-    sh_name = ''
-    sh_type = ''
-    sh_flags = ''
-    sh_addr = ''
-    sh_offset = ''
-    sh_size = ''
-    sh_link = ''
-    sh_info = ''
-    sh_addralign = ''
-    sh_entsize = ''
+
+    def __init__(self):
+        self.sh_name = ''
+        self.sh_type = ''
+        self.sh_flags = ''
+        self.sh_addr = ''
+        self.sh_offset = ''
+        self.sh_size = ''
+        self.sh_link = ''
+        self.sh_info = ''
+        self.sh_addralign = ''
+        self.sh_entsize = ''
+
+    def getName(self):
+        return self.sh_name
+    def setName(self, name):
+        self.sh_name = name
+
+class symbolTableClass:
+
+    def __init__(self):
+        self.st_name = ''
+        self.st_info = ['', '']
+        self.st_other = ''
+        self.st_shndx = ''
+        self.st_value = ''
+        self.st_size = ''
+
+    def getName(self):
+        return self.st_name
+    def setName(self, name):
+        self.st_name = name
 
 curElfHeader = elfHeaderClass()
 curSectionHeader = []
+curStaticSymbolTable = []
+curDynamicSymbolTable = []
 
 def elfHeaderParser():
     global curElfHeader
@@ -292,37 +321,145 @@ def sectionHeaderParser():
     if len(curSectionHeader) != curElfHeader.e_shnum or offset != (curElfHeader.e_shnum * curElfHeader.e_shentsize):
         file.close()
         exit()
-    else:
-        stringTableParser()
     file.close()
 
-def stringTableParser():
-    offset = 0
-    tableSectionIndex = int(curElfHeader.e_shstrndx)
-    tableOffset = int(curSectionHeader[tableSectionIndex].sh_offset, 16)
-    size = int(curSectionHeader[tableSectionIndex].sh_size)
+    strTableIndex = int(curElfHeader.e_shstrndx)
+    strTableOffset = int(curSectionHeader[strTableIndex].sh_offset, 16)
+    strTableSize = int(curSectionHeader[strTableIndex].sh_size)
+
+    stringTableParser(curSectionHeader, strTableOffset, strTableSize)
+
+def stringTableParser(table, offset, size):
     chunk = ''
     decimalValue = 0
     strValue = ''
 
     file = open(fileName, 'rb')
 
-    for i in curSectionHeader:
-        strOffset = int(i.sh_name)
-        file.seek(tableOffset + strOffset)
+    for i in table:
+        strOffset = int(i.getName())
+        file.seek(offset + strOffset)
 
         while chunk != '\0':
             chunk = file.read(1)
             if(chunk != '\0'):
                 strValue += chunk
         
-        i.sh_name = strValue
+        i.setName(strValue)
         strValue = ''
         chunk = ''
 
-
-    file.seek(tableOffset)
     file.close()
+
+def symbolTableParser(table, flag):
+    offset = 0
+    symTableOffset = 0
+    strTableOffset = 0
+    symTableSize = 0
+    strTableSize = 0
+    decimalValue = 0
+    chunk = ''
+
+    if flag == 'Static':
+        for i in curSectionHeader:
+            if i.sh_name == '.symtab' and i.sh_type == 'SHT_SYMTAB':
+                symTableOffset = int(i.sh_offset, 16)
+                symTableSize = i.sh_size
+            if i.sh_name == '.strtab' and i.sh_type == 'SHT_STRTAB':
+                strTableOffset = int(i.sh_offset, 16)
+                strTableSize = i.sh_size
+    elif flag == 'Dynamic':
+        for i in curSectionHeader:
+            if i.sh_name == '.dynsym' and i.sh_type == 'SHT_DYNSYM':
+                symTableOffset = int(i.sh_offset, 16)
+                symTableSize = i.sh_size
+            if i.sh_name == '.dynstr' and i.sh_type == 'SHT_STRTAB':
+                strTableOffset = int(i.sh_offset, 16)
+                strTableSize = i.sh_size
+    else:
+        exit()
+    
+    if symTableOffset == 0 or symTableSize == 0 or strTableOffset == 0 or strTableSize == 0:
+        exit()
+
+    file = open(fileName, 'rb')
+    file.seek(symTableOffset)
+
+    if fileClassID == 1:
+        while offset < symTableSize:
+            table.append(symbolTableClass())
+            index = len(table) - 1
+        
+            chunk = file.read(4)
+            offset += 4
+            decimalValue = unpack('I', chunk)[0]
+            table[index].st_name = decimalValue
+
+            for i in range(4):
+                chunk = file.read(1)
+                offset += 1
+                table[index].st_value = chunk.encode('hex') + table[index].st_value
+
+            table[index].st_value = '0x' + table[index].st_value
+
+            chunk = file.read(4)
+            offset += 4
+            decimalValue = unpack('I', chunk)[0]
+            table[index].st_size = decimalValue
+
+            chunk = str(file.read(1))
+            offset += 1
+            table[index].st_info[0] = symbolBinding[unpack('b', chunk)[0] >> 4]
+            table[index].st_info[1] = symbolTypes[unpack('b', chunk)[0] & 15]
+            
+            chunk = file.read(1)
+            offset += 1
+            table[index].st_other = chunk.encode('hex')
+
+            chunk = file.read(2)
+            offset += 2
+            decimalValue = unpack('H', chunk)[0]
+            table[index].st_shndx = decimalValue
+    else:
+        while offset < symTableSize:
+            table.append(symbolTableClass())
+            index = len(table) - 1
+        
+            chunk = file.read(4)
+            offset += 4
+            decimalValue = unpack('I', chunk)[0]
+            table[index].st_name = decimalValue
+
+            chunk = str(file.read(1))
+            offset += 1
+            table[index].st_info[0] = symbolBinding[unpack('b', chunk)[0] >> 4]
+            table[index].st_info[1] = symbolTypes[unpack('b', chunk)[0] & 15]
+            
+            chunk = file.read(1)
+            offset += 1
+            table[index].st_other = chunk.encode('hex')
+
+            chunk = file.read(2)
+            offset += 2
+            decimalValue = unpack('H', chunk)[0]
+            table[index].st_shndx = decimalValue
+
+            for i in range(8):
+                chunk = file.read(1)
+                offset += 1
+                table[index].st_value = chunk.encode('hex') + table[index].st_value
+
+            table[index].st_value = '0x' + table[index].st_value
+
+            chunk = file.read(8)
+            offset += 8
+            decimalValue = unpack('Q', chunk)[0]
+            table[index].st_size = decimalValue
+
+    file.close()
+
+    stringTableParser(table, strTableOffset, strTableSize)
+
 
 def elfHeaderPrinter():
     magicSeq = ''
@@ -363,6 +500,28 @@ def sectionHeaderPrinter():
         print ('{0:<5}{1:<21}{2:<17}{3:<8}{4:<21}{5:<21}{6:<7}{7:<13}{8:<7}{9:<12}{10:<13}').format(index, i.sh_name, i.sh_type, i.sh_flags, i.sh_addr, i.sh_offset, i.sh_size, i.sh_link, i.sh_info, i.sh_addralign, i.sh_entsize)
         index += 1
 
+def symbolTablePrinter(table, flag):
+    index = 0
+
+    if flag == 'Static':
+        print 
+        print 'Symbol table of \'{}\':'.format('.symtab')
+        print
+    elif flag == 'Dynamic':
+        print 
+        print 'Symbol table of \'{}\':'.format('.dynsym')
+        print
+    else:
+        exit()
+
+
+    print ('{0:<5}{1:<8}{2:<10}{3:<15}{4:<21}{5:<10}{6:<7}').format('No', 'Index', 'Binding', 'Size', 'Value', 'Type', 'Name')
+    print ('{0:<5}{1:<8}{2:<10}{3:<15}{4:<21}{5:<10}{6:<7}').format('--', '-----', '-------', '------------', '------------------', '-------', '---------------------------')
+
+    for i in table:
+        print ('{0:<5}{1:<8}{2:<10}{3:<15}{4:<21}{5:<10}{6:<7}').format(index, i.st_shndx, i.st_info[0], i.st_size, i.st_value, i.st_info[1], i.st_name)
+        index += 1
+
 def sign():
     print
     print "             ___   ___  _   _             "
@@ -374,6 +533,7 @@ def sign():
     print
     print "{:^}".format('Elf parser by Mert Degirmenci')
     print '___________________________________________________'
+    print
 
 def main():
     sign()
@@ -382,7 +542,8 @@ def main():
     argumentParser = argparse.ArgumentParser("Elf parser.")
     argumentParser.add_argument('file', nargs=1, metavar='elf file')
     argumentParser.add_argument('-e', '--elf-header', action='store_true')
-    argumentParser.add_argument('-s', '--section-header', action='store_true')
+    argumentParser.add_argument('-S', '--section-header', action='store_true')
+    argumentParser.add_argument('-s', '--symbol-table', action='store_true')
 
     if len(sys.argv) <= 1:
         sys.argv.append('--help')
@@ -391,12 +552,21 @@ def main():
     fileName = ''.join(args.file)
 
     elfHeaderParser()
+    if int(curElfHeader.e_shoff, 16) > 0 and curElfHeader.e_shnum > 0:
+        sectionHeaderParser()
+        symbolTableParser(curStaticSymbolTable, symbolFlag[0])
+        symbolTableParser(curDynamicSymbolTable, symbolFlag[1])
+    ''' 
+    if int(curElfHeader.e_phoff, 16) > 0 and curElfHeader.e_phnum > 0:
+        programHeaderParser()
+    '''
 
     if len(sys.argv) == 2 or args.elf_header:
         elfHeaderPrinter()
     if args.section_header:
-        sectionHeaderParser()
         sectionHeaderPrinter()
-
+    if args.symbol_table:
+        symbolTablePrinter(curStaticSymbolTable, symbolFlag[0])
+        symbolTablePrinter(curDynamicSymbolTable, symbolFlag[1])
 if __name__ == "__main__":
     main()
